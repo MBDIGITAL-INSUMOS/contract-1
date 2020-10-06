@@ -15,6 +15,7 @@ class ContractLine(models.Model):
     _name = 'contract.line'
     _description = "Contract Line"
     _inherit = 'contract.abstract.contract.line'
+    _order = 'sequence,id'
 
     sequence = fields.Integer(
         string="Sequence",
@@ -204,8 +205,8 @@ class ContractLine(models.Model):
                 ('date_end', '>=', today),
                 ('date_end', '=', False),
                 "|",
-                "&",
                 ('is_auto_renew', '=', True),
+                "&",
                 ('is_auto_renew', '=', False),
                 ('termination_notice_date', '>', today),
             ]
@@ -648,14 +649,20 @@ class ContractLine(models.Model):
                         % line.name
                     )
 
-    @api.depends('recurring_next_date', 'date_start', 'date_end')
+    @api.depends(
+        'display_type',
+        'is_recurring_note',
+        'recurring_next_date',
+        'date_start',
+        'date_end',
+    )
     def _compute_create_invoice_visibility(self):
         # TODO: depending on the lines, and their order, some sections
         # have no meaning in certain invoices
         today = fields.Date.context_today(self)
         for rec in self:
-            if (not rec.display_type and
-                    rec.date_start and today >= rec.date_start):
+            if ((not rec.display_type or rec.is_recurring_note)
+                    and rec.date_start and today >= rec.date_start):
                 rec.create_invoice_visibility = bool(rec.recurring_next_date)
             else:
                 rec.create_invoice_visibility = False
@@ -691,6 +698,7 @@ class ContractLine(models.Model):
         name = self._insert_markers(dates[0], dates[1])
         invoice_line_vals.update(
             {
+                'sequence': self.sequence,
                 'name': name,
                 'account_analytic_id': self.analytic_account_id.id,
                 'analytic_tag_ids': [(6, 0, self.analytic_tag_ids.ids)],
@@ -797,6 +805,10 @@ class ContractLine(models.Model):
             return relativedelta(months=interval)
         elif recurring_rule_type == 'monthlylastday':
             return relativedelta(months=interval, day=1)
+        elif recurring_rule_type == 'quarterly':
+            return relativedelta(months=3 * interval)
+        elif recurring_rule_type == 'semesterly':
+            return relativedelta(months=6 * interval)
         else:
             return relativedelta(years=interval)
 

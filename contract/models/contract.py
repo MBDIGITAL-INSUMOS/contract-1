@@ -6,7 +6,7 @@
 # Copyright 2018 ACSONE SA/NV
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odoo import api, fields, models
+from odoo import fields, models
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools.translate import _
 
@@ -123,7 +123,7 @@ class ContractContract(models.Model):
         track_visibility="onchange",
     )
 
-    @api.multi
+    #@api.multi
     def _inverse_partner_id(self):
         for rec in self:
             if not rec.invoice_partner_id:
@@ -131,7 +131,7 @@ class ContractContract(models.Model):
                     ['invoice']
                 )['invoice']
 
-    @api.multi
+    #@api.multi
     def _get_related_invoices(self):
         self.ensure_one()
 
@@ -170,13 +170,13 @@ class ContractContract(models.Model):
             self.company_id.currency_id
         )
 
-    @api.depends(
+    #@api.depends(
         "manual_currency_id",
         "pricelist_id",
         "partner_id",
         "journal_id",
         "company_id",
-    )
+    #)
     def _compute_currency_id(self):
         for rec in self:
             if rec.manual_currency_id:
@@ -194,12 +194,12 @@ class ContractContract(models.Model):
             else:
                 rec.manual_currency_id = False
 
-    @api.multi
+    #@api.multi
     def _compute_invoice_count(self):
         for rec in self:
             rec.invoice_count = len(rec._get_related_invoices())
 
-    @api.multi
+    #@api.multi
     def action_show_invoices(self):
         self.ensure_one()
         tree_view_ref = (
@@ -226,7 +226,7 @@ class ContractContract(models.Model):
             action['views'] = [(tree_view.id, 'tree'), (form_view.id, 'form')]
         return action
 
-    @api.depends('contract_line_ids.date_end')
+    #@api.depends('contract_line_ids.date_end')
     def _compute_date_end(self):
         for contract in self:
             contract.date_end = False
@@ -234,10 +234,10 @@ class ContractContract(models.Model):
             if date_end and all(date_end):
                 contract.date_end = max(date_end)
 
-    @api.depends(
+    #@api.depends(
         'contract_line_ids.recurring_next_date',
         'contract_line_ids.is_canceled',
-    )
+    #)
     def _compute_recurring_next_date(self):
         for contract in self:
             recurring_next_date = contract.contract_line_ids.filtered(
@@ -247,7 +247,7 @@ class ContractContract(models.Model):
             if recurring_next_date:
                 contract.recurring_next_date = min(recurring_next_date)
 
-    @api.depends('contract_line_ids.create_invoice_visibility')
+    #@api.depends('contract_line_ids.create_invoice_visibility')
     def _compute_create_invoice_visibility(self):
         for contract in self:
             contract.create_invoice_visibility = any(
@@ -256,7 +256,7 @@ class ContractContract(models.Model):
                 )
             )
 
-    @api.onchange('contract_template_id')
+    #@api.onchange('contract_template_id')
     def _onchange_contract_template_id(self):
         """Update the contract fields with that of the template.
 
@@ -285,7 +285,7 @@ class ContractContract(models.Model):
                 if self.contract_template_id[field_name]:
                     self[field_name] = self.contract_template_id[field_name]
 
-    @api.onchange('partner_id', 'company_id')
+    #@api.onchange('partner_id', 'company_id')
     def _onchange_partner_id(self):
         partner = (
             self.partner_id
@@ -313,7 +313,7 @@ class ContractContract(models.Model):
             }
         }
 
-    @api.multi
+    #@api.multi
     def _convert_contract_lines(self, contract):
         self.ensure_one()
         new_lines = self.env['contract.line']
@@ -331,7 +331,7 @@ class ContractContract(models.Model):
         new_lines._onchange_is_auto_renew()
         return new_lines
 
-    @api.multi
+    #@api.multi
     def _prepare_invoice(self, date_invoice, journal=None):
         self.ensure_one()
         if not journal:
@@ -377,7 +377,7 @@ class ContractContract(models.Model):
             invoice_vals['fiscal_position_id'] = self.fiscal_position_id.id
         return invoice_vals
 
-    @api.multi
+    #@api.multi
     def action_contract_send(self):
         self.ensure_one()
         template = self.env.ref('contract.email_contract_template', False)
@@ -401,13 +401,13 @@ class ContractContract(models.Model):
             'context': ctx,
         }
 
-    @api.model
+    #@api.model
     def _finalize_invoice_values(self, invoice_values):
         """Provided for keeping compatibility in this version."""
         # TODO: Must be removed in >=13.0
         return invoice_values
 
-    @api.model
+    #@api.model
     def _finalize_invoice_creation(self, invoices):
         """This method is called right after the creation of the invoices.
 
@@ -417,7 +417,7 @@ class ContractContract(models.Model):
         """
         invoices.compute_taxes()
 
-    @api.model
+    #@api.model
     def _finalize_and_create_invoices(self, invoices_values):
         """This method:
 
@@ -437,7 +437,7 @@ class ContractContract(models.Model):
         self._finalize_invoice_creation(invoices)
         return invoices
 
-    @api.model
+    #@api.model
     def _get_contracts_to_invoice_domain(self, date_ref=None):
         """
         This method builds the domain to use to find all
@@ -451,7 +451,7 @@ class ContractContract(models.Model):
         domain.extend([('recurring_next_date', '<=', date_ref)])
         return domain
 
-    @api.multi
+    #@api.multi
     def _get_lines_to_invoice(self, date_ref):
         """
         This method fetches and returns the lines to invoice on the contract
@@ -490,7 +490,7 @@ class ContractContract(models.Model):
             previous = line
         return lines2invoice.sorted()
 
-    @api.multi
+    #@api.multi
     def _prepare_recurring_invoices_values(self, date_ref=False):
         """
         This method builds the list of invoices values to create, based on
@@ -523,7 +523,7 @@ class ContractContract(models.Model):
             contract_lines._update_recurring_next_date()
         return invoices_values
 
-    @api.multi
+    #@api.multi
     def recurring_create_invoice(self):
         """
         This method triggers the creation of the next invoices of the contracts
@@ -542,12 +542,12 @@ class ContractContract(models.Model):
                 )
         return invoices
 
-    @api.multi
+    #@api.multi
     def _recurring_create_invoice(self, date_ref=False):
         invoices_values = self._prepare_recurring_invoices_values(date_ref)
         return self._finalize_and_create_invoices(invoices_values)
 
-    @api.model
+    #@api.model
     def cron_recurring_create_invoice(self, date_ref=None):
         if not date_ref:
             date_ref = fields.Date.context_today(self)
@@ -562,7 +562,7 @@ class ContractContract(models.Model):
             invoices |= contracts_to_invoice._recurring_create_invoice(date_ref)
         return invoices
 
-    @api.multi
+    #@api.multi
     def action_terminate_contract(self):
         self.ensure_one()
         context = {"default_contract_id": self.id}
@@ -576,7 +576,7 @@ class ContractContract(models.Model):
             'context': context,
         }
 
-    @api.multi
+    #@api.multi
     def _terminate_contract(
         self, terminate_reason_id, terminate_comment, terminate_date
     ):
@@ -592,7 +592,7 @@ class ContractContract(models.Model):
         })
         return True
 
-    @api.multi
+    #@api.multi
     def action_cancel_contract_termination(self):
         self.ensure_one()
         self.write({

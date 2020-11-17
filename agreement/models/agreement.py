@@ -2,7 +2,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 
-from odoo import _, api, models, fields
+from odoo import _, models, fields
 
 
 class Agreement(models.Model):
@@ -38,14 +38,14 @@ class Agreement(models.Model):
     start_date = fields.Date(track_visibility='onchange')
     end_date = fields.Date(track_visibility='onchange')
 
-    @api.model
+    #@api.model
     def _domain_selection(self):
         return [
             ('sale', _('Sale')),
             ('purchase', _('Purchase')),
             ]
 
-    @api.onchange('agreement_type_id')
+    #@api.onchange('agreement_type_id')
     def agreement_type_change(self):
         if self.agreement_type_id and self.agreement_type_id.domain:
             self.domain = self.agreement_type_id.domain
@@ -65,7 +65,7 @@ class Agreement(models.Model):
         'This agreement code already exists for this partner!'
         )]
 
-    @api.returns('self', lambda value: value.id)
+    #@api.returns('self', lambda value: value.id)
     def copy(self, default=None):
         """Always assign a value for code because is required"""
         default = dict(default or {})
